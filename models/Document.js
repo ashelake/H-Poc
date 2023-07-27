@@ -32,7 +32,7 @@ const DocumentSchema = new mongoose.Schema(
     file: { type: String }, //path
     version: docVersionSchema,
     status: { type: String },
-    comments: CommentSchema,
+    comments: [CommentSchema],
     category: { type: String },
     created_by: { type: String },
     modified_by: { type: String },

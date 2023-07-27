@@ -26,6 +26,18 @@ const { signFolder } = require("./utils/signStorage");
 //////////////////////////////////////////////////
 const DocumentSchema = require("./models/Document")
 const NewLogSchema = require("./models/log")
+import { createTransport } from "nodemailer"
+const pdf = require('pdf-parse');
+const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, './pdf/')
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname)
+    },
+});
+const upload = multer({ storage: storage })
 // const Equipment_Schema = require("./models/Equipment_Schema")
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
@@ -367,7 +379,7 @@ app.get("/prev", async (req, res, next) => {
 //************************************************************//
 ////////////////////////////////////////////////////////////////
 //DOCS
-app.post("/document", async (req, res, next) => {
+app.post("/document", upload.single('file'), async (req, res, next) => {
     try {
         let newVersion = {
             draft: 1,
@@ -375,8 +387,8 @@ app.post("/document", async (req, res, next) => {
         }
         const new_doc = new DocumentSchema({
             // id: req.body.data.id,
-            name: req.body.data.name,
-            file: req.body.data.file,
+            name: req.body.data.name, //req.file.originalname,
+            file: req.file.path,
             status: 'created',//req.body.status,
             comments: req.body.data.comments,
             category: req.body.data.category,
@@ -396,6 +408,7 @@ app.post("/document", async (req, res, next) => {
         if (!docCreated) {
             return res.sendStatus(204)
         } else {
+            await sendEmail('leslie.lawrence@zongovita.com', `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
             const new_log = new NewLogSchema({
                 version: 1,
                 doc_name: docCreated.name,
@@ -452,7 +465,7 @@ app.get("/document-all", async (req, res, next) => {
     }
 
 });
-app.patch("/document/:id", async (req, res, next) => {
+app.patch("/document/:id", upload.single('file'), async (req, res, next) => {
     try {
 
         ///////////////////////////////////////////////////////////
@@ -477,27 +490,28 @@ app.patch("/document/:id", async (req, res, next) => {
 
         // }
         const doc = new DocumentSchema({
-            name: req.body.data.name,
-            file: req.body.data.file,
+            name: req.body.data.name, //req.file.originalname,
+            file: req.file.path,
             status: req.body.data.status,
             comments: req.body.data.comments,
             category: req.body.data.category,
-            created_by: req.body.user.id,
+            created_by: reqStatus === 'created' && req.body.user.id,
             modified_by: req.body.user.id,
-            created_date: new Date(),
+            created_date: reqStatus === 'created' && new Date(),
             modified_date: new Date(),
             version: newVersion,
             // comments: req.body.data.comments,
-            // reviewer: req.body.data.reviewer,
-            // approver: req.body.data.approver,
-            // reviewer_date: req.body.data.reviewer_date,
-            // approver_date: req.body.data.approver_date,
+            reviewer: req.body.data.reviewer && req.body.data.reviewer,
+            approver: req.body.data.approver && req.body.data.approver,
+            reviewer_date: req.body.data.reviewer && new Date(),
+            approver_date: reqStatus === 'approved' && new Date(),
         });
         const updatedDoc = await DocumentSchema.findByIdAndUpdate({ _id: req.params.id }, doc);
         // console.log("updatedDoc", updatedDoc)
         if (!updatedDoc) {
             return res.sendStatus(204)
         } else {
+            await sendEmail('leslie.lawrence@zongovita.com', `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by}`, "Document Updated");
             const new_log = new NewLogSchema({
                 version: reqStatus === 'approved' ? updatedDoc.version.final : updatedDoc.version.draft,
                 doc_name: updatedDoc.name,
@@ -524,16 +538,28 @@ app.patch("/document/:id", async (req, res, next) => {
 });
 
 //LOGS
-app.post("/log/", async (req, res, next) => {
+// app.post("/log/", async (req, res, next) => {
+//     try {
+//     } catch (err) {
+//         next(err)
+//     }
+
+// });
+app.get("/log/:id", async (req, res, next) => {
     try {
+        const docLogs = await NewLogSchema.find({ doc_id: req.params.id }).sort({ created_date: -1 })
+        if (docLogs.length === 0) {
+            return res.sendStatus(204)
+        } else {
+            res.status(200).json(docLogs)
+        }
     } catch (err) {
         next(err)
     }
-
 });
 app.get("/log-all", async (req, res, next) => {
     try {
-        const allLogs = await NewLogSchema.find().sort({ created_date: -1 })
+        const allLogs = await NewLogSchema.find({}).sort({ created_date: -1 })
         if (allLogs.length === 0) {
             return res.sendStatus(204)
         } else {
@@ -542,7 +568,6 @@ app.get("/log-all", async (req, res, next) => {
     } catch (err) {
         next(err)
     }
-
 });
 // const createLog = (data, event) => {
 //     const new_log = new LogSchema({
@@ -560,52 +585,68 @@ app.get("/log-all", async (req, res, next) => {
 //     const logCreated = new_log.save();
 //     return;
 // }
-const sendEmail = (sender, reciepient, messageTemplate, title) => {
+const sendEmail = async (reciepient, text, title) => {
+    try {
+        const transport = createTransport({
+            host: process.env.MAIL_HOST,
+            port: process.env.MAIL_PORT,
+            auth: {
+                user: process.env.MAIL_USER,
+                pass: process.env.MAIL_PASS,
+            }
+        })
 
+        await transport.sendMail({
+            from: process.env.MAIL_USER,
+            to: reciepient,
+            subject: title,
+            text
+        })
+    }
+    catch (err) {
+        // next(err)
+        console.log("sendEmail error", err)
+    }
+
+}
+const uploadFile = () => {
+    try {
+
+    } catch (error) {
+        console.log("uploadFile error", error)
+    }
 }
 
 //COMMENTS
-app.post("/comment/", async (req, res, next) => {
+app.post("/comment/:id", async (req, res, next) => {
     try {
-        // const new_comment = new DocumentSchema({
-        //     // id: req.body.data.id,
-        //     name: req.body.data.name,
-        //     file: req.body.data.file,
-        //     status: 'created',//req.body.status,
-        //     comments: req.body.data.comments.push(),
-        //     category: req.body.data.category,
-        //     created_by: req.body.user.id,
-        //     modified_by: req.body.user.id,
-        //     created_date: new Date(),
-        //     modified_date: new Date(),
-        //     version: newVersion,
-        //     // comments: req.body.data.comments,
-        //     // reviewer: req.body.data.reviewer,
-        //     // approver: req.body.data.approver,
-        //     // reviewer_date: req.body.data.reviewer_date,
-        //     // approver_date: req.body.data.approver_date,
-        // })
-        // const commentCreated = await new_comment.save()
-        // // console.log("commentCreated", commentCreated)
-        // if (!commentCreated) {
-        //     return res.sendStatus(204)
-        // } else {
-        //     const new_log = new NewLogSchema({
-        //         version: 1,
-        //         doc_name: docCreated.name,
-        //         doc_id: docCreated.id,
-        //         event: "New Comment Added",
-        //         prev_status: docCreated.status,
-        //         curr_status: docCreated.status,
-        //         created_by: docCreated.created_by,
-        //         reviewed_by: '',
-        //         created_date: new Date(),
-        //         modified_date: new Date(),
-        //     })
-        //     const logCreated = await new_log.save();
-        //     // const logCreated = await new_log.save();
-        //     return res.status(200).json(commentCreated);
-        // } 
+        let existingDoc = await DocumentSchema.findOne({ _id: req.params.id });
+        const new_comment = new DocumentSchema({
+            comments: existingDoc.comments.push(req.body.data.comments),
+            modified_by: req.body.user.id,
+            modified_date: new Date(),
+        })
+        const commentCreated = await DocumentSchema.findByIdAndUpdate({ _id: req.params.id }, new_comment);
+        // console.log("commentCreated", commentCreated)
+        if (!commentCreated) {
+            return res.sendStatus(204)
+        } else {
+            const new_log = new NewLogSchema({
+                version: commentCreated.version.draft,
+                doc_name: commentCreated.name,
+                doc_id: commentCreated.id,
+                event: "New Comment Added",
+                prev_status: commentCreated.status,
+                curr_status: commentCreated.status,
+                created_by: commentCreated.created_by,
+                // reviewed_by: existingDoc.,
+                created_date: new Date(),
+                modified_date: new Date(),
+            })
+            const logCreated = await new_log.save();
+            // const logCreated = await new_log.save();
+            return res.status(200).json(commentCreated);
+        }
     } catch (err) {
         next(err)
     }

@@ -26,8 +26,7 @@ const { signFolder } = require("./utils/signStorage");
 //////////////////////////////////////////////////
 const DocumentSchema = require("./models/Document")
 const NewLogSchema = require("./models/log")
-// import { createTransport } from "nodemailer"
-const createTransport = require("nodemailer")
+import { createTransport } from "nodemailer"
 const pdf = require('pdf-parse');
 const multer = require('multer');
 const storage = multer.diskStorage({
@@ -380,7 +379,7 @@ app.get("/prev", async (req, res, next) => {
 //************************************************************//
 ////////////////////////////////////////////////////////////////
 //DOCS
-app.post("/document", upload.single('file'), async (req, res, next) => {
+app.post("/document", async (req, res, next) => {
     try {
         let newVersion = {
             draft: 1,
@@ -389,7 +388,7 @@ app.post("/document", upload.single('file'), async (req, res, next) => {
         const new_doc = new DocumentSchema({
             // id: req.body.data.id,
             name: req.body.data.name, //req.file.originalname,
-            file: req.file.path,
+            file: req.body.data.file,
             status: 'created',//req.body.status,
             comments: req.body.data.comments,
             category: req.body.data.category,
@@ -466,7 +465,7 @@ app.get("/document-all", async (req, res, next) => {
     }
 
 });
-app.patch("/document/:id", upload.single('file'), async (req, res, next) => {
+app.patch("/document/:id", async (req, res, next) => {
     try {
 
         ///////////////////////////////////////////////////////////
@@ -492,7 +491,7 @@ app.patch("/document/:id", upload.single('file'), async (req, res, next) => {
         // }
         const doc = new DocumentSchema({
             name: req.body.data.name, //req.file.originalname,
-            file: req.file.path,
+            file: req.body.data.file,//req.file.path,
             status: req.body.data.status,
             comments: req.body.data.comments,
             category: req.body.data.category,

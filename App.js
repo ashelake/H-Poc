@@ -621,17 +621,49 @@ const uploadFile = () => {
 //COMMENTS
 app.post("/comment/:id", async (req, res, next) => {
     try {
-        let existingDoc = await DocumentSchema.findOne({ _id: req.params.id });
-        const new_comment = new DocumentSchema({
-            comments: existingDoc.comments.push(req.body.data.comments),
-            modified_by: req.body.user.id,
-            modified_date: new Date(),
-        })
-        const commentCreated = await DocumentSchema.findByIdAndUpdate({ _id: req.params.id }, new_comment);
-        // console.log("commentCreated", commentCreated)
-        if (!commentCreated) {
-            return res.sendStatus(204)
-        } else {
+        // let existingDoc = await DocumentSchema.findOne({ _id: req.params.id });
+        // const new_comments = new DocumentSchema({
+        //     id: req.params.id,
+        //     // comments: existingDoc.comments.push(req.body.data.comments),
+        //     comments: req.body.data.comments,
+        //     modified_by: req.body.user.id,
+        //     modified_date: new Date(),
+        // })
+        // const commentCreated = await DocumentSchema.findByIdAndUpdate({ _id: req.params.id }, new_comments);
+        // // console.log("commentCreated", commentCreated)
+        // if (!commentCreated) {
+        //     return res.sendStatus(204)
+        // } else {
+        //     const new_log = new NewLogSchema({
+        //         version: commentCreated.version.draft,
+        //         doc_name: commentCreated.name,
+        //         doc_id: commentCreated.id,
+        //         event: "New Comment Added",
+        //         prev_status: commentCreated.status,
+        //         curr_status: commentCreated.status,
+        //         created_by: commentCreated.created_by,
+        //         // reviewed_by: existingDoc.,
+        //         created_date: new Date(),
+        //         modified_date: new Date(),
+        //     });
+        //     const logCreated = await new_log.save();
+        //     // const logCreated = await new_log.save();
+        //     return res.status(200).json(commentCreated);
+        // }
+
+        return DocumentSchema.updateOne(
+            { _id: req.params.id },  // <-- find stage
+            {
+                $set: {                // <-- set stage
+                    // id: req.params.id,     // <-- id not _id
+                    comments: req.body.data.comments,
+                    modified_by: req.body.user.id,
+                    modified_date: new Date(),
+                }
+            }
+        ).then(async (result) => {
+            // console.log("result", result)
+            let commentCreated = await DocumentSchema.findOne({ _id: req.params.id });
             const new_log = new NewLogSchema({
                 version: commentCreated.version.draft,
                 doc_name: commentCreated.name,
@@ -643,11 +675,15 @@ app.post("/comment/:id", async (req, res, next) => {
                 // reviewed_by: existingDoc.,
                 created_date: new Date(),
                 modified_date: new Date(),
-            })
+            });
             const logCreated = await new_log.save();
             // const logCreated = await new_log.save();
-            return res.status(200).json(commentCreated);
-        }
+            // return res.status(200).json(commentCreated);
+            return res.status(200).json({ message: "Commented successfully!" });
+        })
+        // .catch((err) => res.sendStatus(204).json({ message: `Request Failed!${err}` }));
+
+
     } catch (err) {
         next(err)
     }

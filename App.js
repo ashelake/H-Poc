@@ -30,23 +30,15 @@ const NewLogSchema = require("./models/log")
 const createTransport = require("nodemailer");
 const pdf = require('pdf-parse');
 const multer = require('multer');
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, './pdf/')
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname)
-    },
-});
-const upload = multer({ storage: storage })
+
 // const Equipment_Schema = require("./models/Equipment_Schema")
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
 
 //middleware for JSON
 // app.use(express.json({limit: '50mb'}));
-app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+// app.use(bodyParser.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.json());
 //middleware for CORS
 app.use(credentials);
@@ -78,21 +70,36 @@ app.use("/logout", logout);
 //     res.status(200).json(uploadedFile)
 // })
 
-app.post("/document-update", upload.single('file'), async (req, res) => {
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        console.log("1", file)
+        cb(null, './doc/')
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname)
+    },
+});
+const upload = multer({ storage: storage })
+
+app.post("/document-update", upload.single('file'), async (req, res, next) => {
     try {
+        console.log(req.body)
+        // console.log(json.parse(req.body))
+
+        console.log(req.file)
         let newVersion = {
             draft: 1,
             final: 1,
         }
         const new_doc = new DocumentSchema({
             // id: req.body.data.id,
-            name: req.body.data.name, //req.file.originalname,
+            name: req.body.name, //req.file.originalname,
             file: req.file.path,
             status: 'created',//req.body.status,
-            comments: req.body.data.comments,
-            category: req.body.data.category,
-            created_by: req.body.user.id,
-            modified_by: req.body.user.id,
+            comments: req.body.comments,
+            category: req.body.category,
+            created_by: req.body.id,
+            modified_by: req.body.id,
             created_date: new Date(),
             modified_date: new Date(),
             version: newVersion,
@@ -116,7 +123,7 @@ app.post("/document-update", upload.single('file'), async (req, res) => {
                 prev_status: docCreated.status,
                 curr_status: docCreated.status,
                 created_by: docCreated.created_by,
-                executed_by: req.body.user.id,
+                executed_by: req.body.id,
                 reviewed_by: '',
                 created_date: new Date(),
                 modified_date: new Date(),
@@ -126,6 +133,7 @@ app.post("/document-update", upload.single('file'), async (req, res) => {
             return res.status(200).json(docCreated)
         }
     } catch (err) {
+        console.log(err);
         next(err)
     }
 

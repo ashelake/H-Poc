@@ -10,6 +10,7 @@ const NewLogSchema = new mongoose.Schema(
         prev_status: { type: String },
         curr_status: { type: String },
         created_by: { type: String },
+        executed_by: { type: String },
         reviewed_by: { type: String },
         created_date: { type: Date },
         modified_date: { type: Date },

@@ -418,6 +418,7 @@ app.post("/document", async (req, res, next) => {
                 prev_status: docCreated.status,
                 curr_status: docCreated.status,
                 created_by: docCreated.created_by,
+                executed_by: req.body.user.id,
                 reviewed_by: '',
                 created_date: new Date(),
                 modified_date: new Date(),
@@ -522,6 +523,7 @@ app.patch("/document/:id", async (req, res, next) => {
                 curr_status: updatedDoc.status,
                 created_by: updatedDoc.created_by,
                 reviewed_by: updatedDoc.reviewer,
+                executed_by: req.body.user.id,
                 created_date: new Date(),
                 modified_date: new Date(),
             })
@@ -672,6 +674,7 @@ app.post("/comment/:id", async (req, res, next) => {
                 prev_status: commentCreated.status,
                 curr_status: commentCreated.status,
                 created_by: commentCreated.created_by,
+                executed_by: req.body.user.id,
                 // reviewed_by: existingDoc.,
                 created_date: new Date(),
                 modified_date: new Date(),

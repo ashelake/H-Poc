@@ -49,6 +49,7 @@ app.use(cookieParser()); //middleware for cookies
 const login = require("./routes/Login");
 const logout = require("./routes/logout");
 const user = require("./routes/Register");
+const cloudinary = require("./cloudnary/cloudnary");
 
 /* importing local Routes base URL points */
 app.use("/register", user);
@@ -83,9 +84,14 @@ const upload = multer({ storage: storage })
 
 app.post("/document-update", upload.single('file'), async (req, res, next) => {
     try {
+        let url;
+        await cloudinary.uploader.upload(req.file.path, { resource_type: "auto" }, function (err, result) {
+            console.log("result", result)
+            url = result.secure_url
+        })
         console.log(req.body)
         // console.log(json.parse(req.body))
-
+        console.log(url)
         console.log(req.file)
         let newVersion = {
             draft: 1,
@@ -94,7 +100,7 @@ app.post("/document-update", upload.single('file'), async (req, res, next) => {
         const new_doc = new DocumentSchema({
             // id: req.body.data.id,
             name: req.body.name, //req.file.originalname,
-            file: req.file.path,
+            file: url,
             status: 'created',//req.body.status,
             comments: req.body.comments,
             category: req.body.category,

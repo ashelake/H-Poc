@@ -64,6 +64,76 @@ app.use("/login", login);
 app.use("/logout", logout);
 
 
+
+
+// app.post('/doc-upload', upload.single('file'), async function (req, res) {
+
+//     let report = {
+//         originalname: req.file.originalname,
+//         path: req.file.path,
+//         upload_date: new Date()
+//     }
+//     let uploadedFile = await Report.insertMany(report)
+
+//     res.status(200).json(uploadedFile)
+// })
+
+app.post("/document-update", upload.single('file'), async (req, res) => {
+    try {
+        let newVersion = {
+            draft: 1,
+            final: 1,
+        }
+        const new_doc = new DocumentSchema({
+            // id: req.body.data.id,
+            name: req.body.data.name, //req.file.originalname,
+            file: req.file.path,
+            status: 'created',//req.body.status,
+            comments: req.body.data.comments,
+            category: req.body.data.category,
+            created_by: req.body.user.id,
+            modified_by: req.body.user.id,
+            created_date: new Date(),
+            modified_date: new Date(),
+            version: newVersion,
+            // comments: req.body.data.comments,
+            // reviewer: req.body.data.reviewer,
+            // approver: req.body.data.approver,
+            // reviewer_date: req.body.data.reviewer_date,
+            // approver_date: req.body.data.approver_date,
+        })
+        const docCreated = await new_doc.save()
+        // console.log("docCreated", docCreated)
+        if (!docCreated) {
+            return res.sendStatus(204)
+        } else {
+            await sendEmail('leslie.lawrence@zongovita.com', `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            const new_log = new NewLogSchema({
+                version: 1,
+                doc_name: docCreated.name,
+                doc_id: docCreated.id,
+                event: "Document Created",
+                prev_status: docCreated.status,
+                curr_status: docCreated.status,
+                created_by: docCreated.created_by,
+                executed_by: req.body.user.id,
+                reviewed_by: '',
+                created_date: new Date(),
+                modified_date: new Date(),
+            })
+            const logCreated = await new_log.save();
+            // const logCreated = await new_log.save();
+            return res.status(200).json(docCreated)
+        }
+    } catch (err) {
+        next(err)
+    }
+
+});
+
+
+
+
 //---------------------------------------------Module & Log----------------//
 //Get all Module
 app.get("/allmodule", async (req, res, next) => {

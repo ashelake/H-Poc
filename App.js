@@ -495,7 +495,7 @@ app.post("/document", async (req, res, next) => {
         if (!docCreated) {
             return res.sendStatus(204)
         } else {
-            await sendEmail('leslie.lawrence@zongovita.com', `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            await sendEmail('mona.raychura@zongovita.com', `A new document named ${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
             const new_log = new NewLogSchema({
                 version: 1,
                 doc_name: docCreated.name,
@@ -516,7 +516,6 @@ app.post("/document", async (req, res, next) => {
     } catch (err) {
         next(err)
     }
-
 });
 app.get("/document/:id", async (req, res, next) => {
     try {
@@ -542,7 +541,17 @@ app.get("/document/:id", async (req, res, next) => {
 });
 app.get("/document-all", async (req, res, next) => {
     try {
-        const allDocs = await DocumentSchema.find({}).sort({ created_date: -1 })
+
+        let role = req.query.role;
+        if (role == "1000") {
+            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "Waiting for Approval"] } }] }).sort({ created_date: -1 })
+        }
+        if (role == "1001") {
+            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "Waiting for Review"] } }] }).sort({ created_date: -1 })
+        }
+        if (role == "1003") {
+            var allDocs = await DocumentSchema.find({}).sort({ created_date: -1 })
+        }
         if (allDocs.length === 0) {
             return res.sendStatus(204)
         } else {
@@ -602,12 +611,14 @@ app.patch("/document/:id", async (req, res, next) => {
         if (!updatedDoc) {
             return res.sendStatus(204)
         } else {
-            await sendEmail('leslie.lawrence@zongovita.com', `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by}`, "Document Updated");
+            let message = returnMessage(reqStatus);
+
+            await sendEmail('mona.raychura@zongovita.com', `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
             const new_log = new NewLogSchema({
                 version: reqStatus === 'approved' ? updatedDoc.version.final : updatedDoc.version.draft,
                 doc_name: updatedDoc.name,
                 doc_id: updatedDoc.id,
-                event: reqStatus === 'approved' ? "Master Copy Created" : "Document Updated",
+                event: reqStatus === 'approved' ? "" : "Document Updated",
                 prev_status: existingDoc.status,
                 curr_status: updatedDoc.status,
                 created_by: updatedDoc.created_by,
@@ -626,6 +637,13 @@ app.patch("/document/:id", async (req, res, next) => {
     }
 });
 
+const returnMessage = (status) => {
+    if (status === 'Waiting for Review')
+        return 'and is ready for Review.';
+    else if (status === 'Waiting for Approval')
+        return 'and is ready for Approval.';
+    else return '';
+}
 //LOGS
 // app.post("/log/", async (req, res, next) => {
 //     try {

@@ -27,6 +27,7 @@ const { signFolder } = require("./utils/signStorage");
 const DocumentSchema = require("./models/Document")
 const NewLogSchema = require("./models/log")
 // import { createTransport } from "nodemailer"
+const nodemailer = require("nodemailer");
 const createTransport = require("nodemailer");
 const pdf = require('pdf-parse');
 const multer = require('multer');

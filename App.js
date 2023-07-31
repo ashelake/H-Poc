@@ -618,7 +618,7 @@ app.patch("/document/:id", async (req, res, next) => {
                 version: reqStatus === 'approved' ? updatedDoc.version.final : updatedDoc.version.draft,
                 doc_name: updatedDoc.name,
                 doc_id: updatedDoc.id,
-                event: reqStatus === 'approved' ? "" : "Document Updated",
+                event: returnEvent(reqStatus),
                 prev_status: existingDoc.status,
                 curr_status: updatedDoc.status,
                 created_by: updatedDoc.created_by,
@@ -642,6 +642,21 @@ const returnMessage = (status) => {
         return 'and is ready for Review.';
     else if (status === 'Waiting for Approval')
         return 'and is ready for Approval.';
+    else return '';
+}
+const returnEvent = (status) => {
+    if (status === 'Waiting for Review')
+        return 'Waiting for Review';
+    else if (status === 'Reviewed')
+        return 'Document Reviewed';
+    else if (status === 'Waiting for Approval')
+        return 'Waiting for Approval';
+    else if (status === 'approved')
+        return 'Document Approved';
+    else if (status === 'created')
+        return 'Document Created';
+    else if (status === 'Published')
+        return 'Document Published';
     else return '';
 }
 //LOGS

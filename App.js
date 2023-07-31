@@ -28,7 +28,8 @@ const DocumentSchema = require("./models/Document")
 const NewLogSchema = require("./models/log")
 // import { createTransport } from "nodemailer"
 const nodemailer = require("nodemailer");
-const createTransport = require("nodemailer");
+// const createTransport = require("nodemailer");
+const createTransport = nodemailer.createTransport;
 const pdf = require('pdf-parse');
 const multer = require('multer');
 
@@ -556,7 +557,7 @@ app.patch("/document/:id", async (req, res, next) => {
     try {
         ///////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////
-        const reqStatus = req.body.status;
+        const reqStatus = req.body.data.status;
         existingDoc = await DocumentSchema.findOne({ _id: req.params.id });
         let newVersion = {
             draft: Math.floor(existingDoc.version.draft + 0.1),

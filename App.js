@@ -544,10 +544,10 @@ app.get("/document-all", async (req, res, next) => {
 
         let role = req.query.role;
         if (role == "1000") {
-            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "Waiting for Approval"] } }] }).sort({ created_date: -1 })
+            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "Waiting for Approval", "Published"] } }] }).sort({ created_date: -1 })
         }
         if (role == "1001") {
-            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "Waiting for Review"] } }] }).sort({ created_date: -1 })
+            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "Waiting for Review", "Published"] } }] }).sort({ created_date: -1 })
         }
         if (role == "1003") {
             var allDocs = await DocumentSchema.find({}).sort({ created_date: -1 })

@@ -21,7 +21,7 @@ const Room_Trans_Schema = require("./models/Room_Trans_Schema")
 const Equipment_Schema = require("./models/Equipment_Schema")
 const { signatureUpload } = require("./uploads/signUpload");
 const { signFolder } = require("./utils/signStorage");
-
+const { emailTemplate } = require("./utils/emailTemplate")
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
 const DocumentSchema = require("./models/Document")
@@ -554,19 +554,18 @@ app.get("/document-all", async (req, res, next) => {
 });
 app.patch("/document/:id", async (req, res, next) => {
     try {
-
         ///////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////
         const reqStatus = req.body.status;
         existingDoc = await DocumentSchema.findOne({ _id: req.params.id });
         let newVersion = {
-            draft: existingDoc.version.draft + 0.1,
+            draft: Math.floor(existingDoc.version.draft + 0.1),
             final: existingDoc.version.final,
         }
         if (reqStatus === 'approved') {
             newVersion = {
                 draft: existingDoc.version.draft,
-                final: existingDoc.version.final + 0.1,
+                final: Math.floor(existingDoc.version.final + 0.1),
             }
         }
         // else if (reqStatus === 're_drafted') { }
@@ -574,25 +573,29 @@ app.patch("/document/:id", async (req, res, next) => {
         // else if (reqStatus === 'waiting_for_review') { }
         // else if (reqStatus === 'reviewed') { }
         // else { // created
-
         // }
-        const doc = new DocumentSchema({
-            name: req.body.data.name, //req.file.originalname,
-            file: req.body.data.file,//req.file.path,
-            status: req.body.data.status,
-            comments: req.body.data.comments,
-            category: req.body.data.category,
-            created_by: reqStatus === 'created' && req.body.user.id,
+        const doc = {
+            ...(req.body.data.name) && { name: req.body.data.name },
+            ...(req.body.data.file) && { file: req.body.data.file },
+            ...(req.body.data.status) && { status: req.body.data.status },
+            ...(req.body.data.comments) && { comments: req.body.data.comments },
+            ...(req.body.data.category) && { category: req.body.data.category },
+            // name: req.body.data.name, //req.file.originalname,
+            // file: req.body.data.file,//req.file.path,
+            // status: req.body.data.status,
+            // comments: req.body.data.comments,
+            // category: req.body.data.category,
+            ...(reqStatus === 'created') && { created_by: req.body.user.id },
             modified_by: req.body.user.id,
-            created_date: reqStatus === 'created' && new Date(),
+            ...(reqStatus === 'created') && { created_date: new Date() },
             modified_date: new Date(),
             version: newVersion,
             // comments: req.body.data.comments,
-            reviewer: req.body.data.reviewer && req.body.data.reviewer,
-            approver: req.body.data.approver && req.body.data.approver,
-            reviewer_date: req.body.data.reviewer && new Date(),
-            approver_date: reqStatus === 'approved' && new Date(),
-        });
+            ...(req.body.data.reviewer) && { reviewer: req.body.data.reviewer },
+            ...(req.body.data.approver) && { approver: req.body.data.approver },
+            ...(req.body.data.reviewer) && { reviewer_date: new Date() },
+            ...(reqStatus === 'approved') && { approver_date: new Date() },
+        };
         const updatedDoc = await DocumentSchema.findByIdAndUpdate({ _id: req.params.id }, doc);
         // console.log("updatedDoc", updatedDoc)
         if (!updatedDoc) {
@@ -617,9 +620,6 @@ app.patch("/document/:id", async (req, res, next) => {
         }
         ///////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////
-
-
-
     } catch (err) {
         next(err)
     }
@@ -683,19 +683,21 @@ const sendEmail = async (reciepient, text, title) => {
                 pass: process.env.MAIL_PASS,
             }
         })
-
-        await transport.sendMail({
+        let mailOptions = {
             from: process.env.MAIL_USER,
             to: reciepient,
             subject: title,
-            text
-        })
+            html: emailTemplate.replace(
+                "**********MESSAGE**********",
+                text
+            ),
+        };
+        await transport.sendMail(mailOptions)
     }
     catch (err) {
         // next(err)
         console.log("sendEmail error", err)
     }
-
 }
 const uploadFile = () => {
     try {

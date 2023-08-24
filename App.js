@@ -186,7 +186,7 @@ app.patch("/doc-update/:id", async (req, res, next) => {
         let DOC = await DocumentSchema.findOne({ _id: req.params.id });
         console.log(DOC.file)
         let existingContent = fs.readFileSync(`${DOC.file}`, 'utf8');
-        const updatedContent = existingContent + file;
+        const updatedContent = file;
 
         fs.writeFileSync(`${DOC.file}`, updatedContent);
         const filename = DOC.file

@@ -51,8 +51,8 @@ const userSchema = new mongoose.Schema(
     },
     department: {
       type: Array,
-    //   maxlength: [25, "25 character's Maximum allowed"],
-    //   required: [true, "'Department' is mandatory"],
+      //   maxlength: [25, "25 character's Maximum allowed"],
+      //   required: [true, "'Department' is mandatory"],
     },
     designation: {
       type: String,
@@ -75,15 +75,15 @@ const userSchema = new mongoose.Schema(
     subscriber_id: { type: String },
     db_name: { type: String },
     sites: { type: Array },
-    is_active:{type: Boolean, default: true},
+    is_active: { type: Boolean, default: true },
     created_by: { type: String },
     modified_by: { type: String },
   },
   {
-    collection: "users",
+    collection: "Users",
     timestamps: true,
   }
 );
 
 /*exporting module for the global usage */
-module.exports = mongoose.model("users", userSchema);
+module.exports = mongoose.model("Users", userSchema);

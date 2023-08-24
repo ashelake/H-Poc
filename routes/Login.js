@@ -64,15 +64,16 @@ const { authenticateToken } = require("../controllers/authenticateToken");
 
 //login (live)
 router.post("/", async (req, res, next) => {
+
   const user = await Register_Schema.find(
-    { email: req.body.email},{email: 1, first_name:1, last_name:1, role:1, pass:1}
+    { email: req.body.email }, { email: 1, first_name: 1, last_name: 1, role: 1, pass: 1 }
   );
   // console.log("user[0].db_name",user[0].db_name)
-  var data = await Register_Schema.find({ email: req.body.email});
+  var data = await Register_Schema.find({ email: req.body.email });
   if (user.length == 0) return res.sendStatus(204);
   try {
     if (await bcrypt.compare(req.body.pass, user[0].pass)) {
-      const accessToken = generateAccessToken(user[0].toJSON());
+      const accessToken = generateAccessToken(user[0].toJSON(),);
       const refreshToken = jwt.sign(
         user[0].toJSON(),
         process.env.REFRESH_TOKEN_SECRET,

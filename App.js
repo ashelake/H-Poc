@@ -1,5 +1,6 @@
 /* importing package & local dependencies */
 require("dotenv").config();
+const fs = require("fs")
 const express = require("express"); //use express
 const port = process.env.PORT || 9000;
 const connectDB = require("./config/db");
@@ -11,7 +12,7 @@ connectDB(); //use & connect to MongoDB
 const app = express(); //initialize express app
 const cors = require("cors");
 const corsOptions = require("./config/corsOptions");
-
+const mammoth = require("mammoth")
 //#Local files
 
 const Log_Schema = require("./models/Log_Schema")
@@ -73,28 +74,54 @@ app.use("/logout", logout);
 //     res.status(200).json(uploadedFile)
 // })
 
+// const storage = multer.diskStorage({
+//     destination: (req, file, cb) => {
+//         console.log("1", file)
+//         cb(null, './doc/')
+//     },
+//     filename: (req, file, cb) => {
+//         cb(null, file.originalname)
+//     },
+// });
+// const upload = multer({ storage: storage })
+
+
+// const uploadHtml = async () => {
+//     const cpBeforePic = new S3();
+//     const param = {
+//         Bucket: process.env.AWS_BUCKET_NAME,
+//         Key: `edms/${uuid()}.html`,
+//         Body: fileContent
+//     };
+//     return await cpBeforePic.upload(param).promise()
+// }
+
+// Configure multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        console.log("1", file)
-        cb(null, './doc/')
+        cb(null, 'uploadedFiles/'); // Save uploaded files in the 'uploads' folder
     },
     filename: (req, file, cb) => {
-        cb(null, file.originalname)
-    },
+        cb(null, file.originalname); // Rename files to avoid conflicts
+    }
 });
-const upload = multer({ storage: storage })
+const upload = multer({ storage });
 
-app.post("/document-update", upload.single('file'), async (req, res, next) => {
+app.post("/document-update", async (req, res, next) => {
     try {
-        let url;
-        await cloudinary.uploader.upload(req.file.path, { resource_type: "auto" }, function (err, result) {
-            console.log("result", result)
-            url = result.secure_url
-        })
-        console.log(req.body)
-        // console.log(json.parse(req.body))
-        console.log(url)
-        console.log(req.file)
+
+        // await cloudinary.uploader.upload(req.file.path, { resource_type: "auto" }, function (err, result) {
+        //     console.log("result", result)
+        //     url = result.secure_url
+        // })
+
+        const { html, title } = req.body;
+
+        fs.writeFileSync(`./Data/${title}.html`, html);
+        const filename = `./Data/${title}.html`
+        // const fileContent = fs.readFileSync(filename)
+        // let uploadHTML = await uploadHtml(fileContent);
+        // url = uploadHTML.Location       
         let newVersion = {
             draft: 1,
             final: 1,
@@ -102,7 +129,7 @@ app.post("/document-update", upload.single('file'), async (req, res, next) => {
         const new_doc = new DocumentSchema({
             // id: req.body.data.id,
             name: req.body.name, //req.file.originalname,
-            file: url,
+            file: filename,
             status: 'created',//req.body.status,
             comments: req.body.comments,
             category: req.body.category,
@@ -147,6 +174,201 @@ app.post("/document-update", upload.single('file'), async (req, res, next) => {
 
 });
 
+app.patch("/doc-update/:id", async (req, res, next) => {
+    try {
+
+        // await cloudinary.uploader.upload(req.file.path, { resource_type: "auto" }, function (err, result) {
+        //     console.log("result", result)
+        //     url = result.secure_url
+        // })
+
+        const { file, title } = req.body.data;
+        let DOC = await DocumentSchema.findOne({ _id: req.params.id });
+        console.log(DOC.file)
+        let existingContent = fs.readFileSync(`${DOC.file}`, 'utf8');
+        const updatedContent = existingContent + file;
+
+        fs.writeFileSync(`${DOC.file}`, updatedContent);
+        const filename = DOC.file
+        // const fileContent = fs.readFileSync(filename)
+        // let uploadHTML = await uploadHtml(fileContent);
+        // url = uploadHTML.Location       
+        let newVersion = {
+            draft: 1,
+            final: 1,
+        }
+        const docCreated = await DocumentSchema.findByIdAndUpdate({ _id: req.params.id }, {
+            // id: req.body.data.id,
+            // name: req.body.name, //req.file.originalname,
+            file: filename,
+            status: 'edited',//req.body.status,
+            // comments: req.body.comments,
+            // category: req.body.category,
+            // created_by: req.body.id,
+            // modified_by: req.body.id,
+            created_date: new Date(),
+            modified_date: new Date(),
+            version: newVersion,
+            // comments: req.body.data.comments,
+            // reviewer: req.body.data.reviewer,
+            // approver: req.body.data.approver,
+            // reviewer_date: req.body.data.reviewer_date,
+            // approver_date: req.body.data.approver_date,
+        })
+        // const docCreated = await new_doc.save()
+        // console.log("docCreated", docCreated)
+        if (!docCreated) {
+            return res.sendStatus(204)
+        } else {
+            await sendEmail('leslie.lawrence@zongovita.com', `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            const new_log = new NewLogSchema({
+                version: 1,
+                doc_name: docCreated.name,
+                doc_id: docCreated.id,
+                event: "Document Created",
+                prev_status: docCreated.status,
+                curr_status: docCreated.status,
+                created_by: docCreated.created_by,
+                executed_by: req.body.id,
+                reviewed_by: '',
+                created_date: new Date(),
+                modified_date: new Date(),
+            })
+            const logCreated = await new_log.save();
+            // const logCreated = await new_log.save();
+            return res.status(200).json(docCreated)
+        }
+    } catch (err) {
+        console.log(err);
+        next(err)
+    }
+
+});
+
+
+app.get("/dashboard", async (req, res) => {
+    try {
+        let resObject = []
+        let created = await DocumentSchema.find({ $in: { status: ["created", "edited",] } }).count()
+        let published = await DocumentSchema.find({ status: "Published" }).count()
+        let wfr = await DocumentSchema.find({ status: "waiting_for_review" }).count()
+        let reviewed = await DocumentSchema.find({ status: "Reviewed" }).count()
+        let wfa = await DocumentSchema.find({ status: "waiting_for_approval" }).count()
+        let approved = await DocumentSchema.find({ status: "approved" }).count()
+
+        resObject.push({ status: "Created", count: created })
+        resObject.push({ status: "Published", count: published })
+        resObject.push({ status: "Waiting for review", count: wfr })
+        resObject.push({ status: "Reviewed", count: reviewed })
+        resObject.push({ status: "Waiting for approval", count: wfa })
+        resObject.push({ status: "Approved", count: approved })
+
+
+        res.status(200).json(resObject)
+
+    } catch (error) {
+        res.status(404).json(error)
+    }
+})
+
+app.get("/published-doc", async (req, res) => {
+    try {
+        let pageNumber = Math.abs(parseInt(req.query.page)) || 1; //initially on first page
+        let limit = Math.abs(parseInt(req.query.limit)) || 10; //by default give 10 data per page
+
+        let resObject = {
+            result: [],
+            pageNumber: pageNumber,
+            resultCount: 0,
+            totalCount: 0
+        }
+        const data = await DocumentSchema.find({ status: "Published" }).skip((pageNumber - 1) * limit).limit(limit)
+        const totalData = await DocumentSchema.find({ status: "Published" }).count()
+        resObject.result = data
+        resObject.resultCount = data.length;
+        resObject.totalCount = totalData
+        res.status(200).json(resObject)
+
+
+    } catch (error) {
+        console.log(error)
+        res.status(404).json(error.message)
+    }
+})
+
+
+
+app.post("/read-doc", upload.single('file'), async (req, res) => {
+    try {
+        var html;
+        var filename;
+        console.log('File uploaded:', req.file);
+        // res.json({ message: 'File uploaded successfully' });
+        let path = req.file.filename
+        await mammoth.convertToHtml({ path: `./uploadedFiles/${path}` })
+            .then(function (result) {
+                html = result.value; // The generated HTML
+                console.log(html)
+                fs.writeFileSync(`./Data/${req.body.name}.html`, html);
+                filename = `./Data/${req.body.name}.html`
+                var messages = result.messages; // Any messages, such as warnings during conversion
+            })
+            .catch(function (error) {
+                console.error(error);
+            });
+        let newVersion = {
+            draft: 1,
+            final: 1,
+        }
+        const new_doc = new DocumentSchema({
+            // id: req.body.data.id,
+            name: req.body.name, //req.file.originalname,
+            file: filename,
+            status: 'created',//req.body.status,
+            comments: req.body.comments,
+            category: req.body.category,
+            created_by: req.body.id,
+            modified_by: req.body.id,
+            created_date: new Date(),
+            modified_date: new Date(),
+            version: newVersion,
+            // comments: req.body.data.comments,
+            // reviewer: req.body.data.reviewer,
+            // approver: req.body.data.approver,
+            // reviewer_date: req.body.data.reviewer_date,
+            // approver_date: req.body.data.approver_date,
+        })
+        const docCreated = await new_doc.save()
+        // console.log("docCreated", docCreated)
+        if (!docCreated) {
+            return res.sendStatus(204)
+        } else {
+            await sendEmail('leslie.lawrence@zongovita.com', `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            const new_log = new NewLogSchema({
+                version: 1,
+                doc_name: docCreated.name,
+                doc_id: docCreated.id,
+                event: "Document Created",
+                prev_status: docCreated.status,
+                curr_status: docCreated.status,
+                created_by: docCreated.created_by,
+                executed_by: req.body.id,
+                reviewed_by: '',
+                created_date: new Date(),
+                modified_date: new Date(),
+            })
+            const logCreated = await new_log.save();
+            // const logCreated = await new_log.save();
+            console.log(req.file.originalname)
+            fs.unlinkSync(`./uploadedFiles/${req.file.originalname}`)
+            return res.status(200).json(docCreated)
+        }
+
+
+    } catch (error) {
+        console.log(error)
+    }
+})
 
 
 
@@ -468,14 +690,21 @@ app.get("/prev", async (req, res, next) => {
 //DOCS
 app.post("/document", async (req, res, next) => {
     try {
+        const { file, name } = req.body.data;
         let newVersion = {
             draft: 1,
             final: 1,
         }
+        console.log(file, name)
+
+
+
+        fs.writeFileSync(`./Data/${name}.html`, file);
+        const filename = `./Data/${name}.html`
         const new_doc = new DocumentSchema({
             // id: req.body.data.id,
             name: req.body.data.name, //req.file.originalname,
-            file: req.body.data.file,
+            file: filename,//req.body.data.file,
             status: 'created',//req.body.status,
             comments: req.body.data.comments,
             category: req.body.data.category,
@@ -532,7 +761,10 @@ app.get("/document/:id", async (req, res, next) => {
             //         }
             //     }
             // }
-            res.status(200).json(doc);
+            const fileContent = fs.readFileSync(doc.file, 'utf-8')
+
+            // console.log(doc)
+            res.status(200).json({ doc, fileContent });
         }
     } catch (err) {
         next(err)
@@ -544,13 +776,13 @@ app.get("/document-all", async (req, res, next) => {
 
         let role = req.query.role;
         if (role == "1000") {
-            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "Waiting for Approval", "Published"] } }] }).sort({ created_date: -1 })
+            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "Waiting for Approval"] } }] }).sort({ created_date: -1 })
         }
         if (role == "1001") {
-            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "Waiting for Review", "Published"] } }] }).sort({ created_date: -1 })
+            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "Waiting for Review"] } }] }).sort({ created_date: -1 })
         }
         if (role == "1003") {
-            var allDocs = await DocumentSchema.find({}).sort({ created_date: -1 })
+            var allDocs = await DocumentSchema.find({ status: { $nin: ["Published",] } }).sort({ created_date: -1 })
         }
         if (allDocs.length === 0) {
             return res.sendStatus(204)

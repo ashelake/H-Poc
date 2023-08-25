@@ -185,10 +185,10 @@ app.patch("/doc-update/:id", async (req, res, next) => {
         const { file, title } = req.body.data;
         let DOC = await DocumentSchema.findOne({ _id: req.params.id });
         console.log(DOC.file)
-        let existingContent = fs.readFileSync(`${DOC.file}`, 'utf8');
-        const updatedContent = file;
+        // let existingContent = fs.readFileSync(`./Data/${DOC.file}`, 'utf8');
+        // const updatedContent = file;
 
-        fs.writeFileSync(`${DOC.file}`, updatedContent);
+        fs.writeFileSync(`${DOC.file}`, file);
         const filename = DOC.file
         // const fileContent = fs.readFileSync(filename)
         // let uploadHTML = await uploadHtml(fileContent);
@@ -208,7 +208,7 @@ app.patch("/doc-update/:id", async (req, res, next) => {
             // modified_by: req.body.id,
             created_date: new Date(),
             modified_date: new Date(),
-            version: newVersion,
+            // version: newVersion,
             // comments: req.body.data.comments,
             // reviewer: req.body.data.reviewer,
             // approver: req.body.data.approver,

@@ -257,11 +257,11 @@ app.get("/dashboard", async (req, res) => {
         let approved = await DocumentSchema.find({ status: "approved" }).count()
 
         resObject.push({ status: "Created", count: created })
-        resObject.push({ status: "Published", count: published })
         resObject.push({ status: "Waiting for review", count: wfr })
         resObject.push({ status: "Reviewed", count: reviewed })
         resObject.push({ status: "Waiting for approval", count: wfa })
         resObject.push({ status: "Approved", count: approved })
+        resObject.push({ status: "Published", count: published })
 
 
         res.status(200).json(resObject)
@@ -325,13 +325,15 @@ app.post("/read-doc", upload.single('file'), async (req, res) => {
             name: req.body.name, //req.file.originalname,
             file: filename,
             status: 'created',//req.body.status,
+            department: req.body.department,
+            doc_number: req.body.doc_number,
             comments: req.body.comments,
             category: req.body.category,
             created_by: req.body.id,
             modified_by: req.body.id,
             created_date: new Date(),
             modified_date: new Date(),
-            version: newVersion,
+            version: req.body.version,
             // comments: req.body.data.comments,
             // reviewer: req.body.data.reviewer,
             // approver: req.body.data.approver,

@@ -13,7 +13,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:8081",
   "http://localhost:9000",
-  "https://edms-nu.vercel.app",
+  "https://edms-nu.vercel.app/",
 ];
 
 /*exporting module for the global usage */

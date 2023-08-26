@@ -175,6 +175,72 @@ app.post("/document-update", authenticateToken, async (req, res, next) => {
 
 });
 
+
+app.get("/bar-grph", async (req, res) => {
+    try {
+        let resObject = []
+        let created = await DocumentSchema.aggregate([{ $match: { status: { $in: ["created", "edited",] } } },
+        {
+            $group: {
+                _id: "$department", // Replace fieldName with the actual field name
+                count: { $sum: 1 }
+            }
+        }
+        ])
+        let published = await DocumentSchema.aggregate([{ $match: { status: "Published" } },
+        {
+            $group: {
+                _id: "$department", // Replace fieldName with the actual field name
+                count: { $sum: 1 }
+            }
+        }
+        ])
+        let wfr = await DocumentSchema.aggregate([{ $match: { status: "waiting_for_review" } },
+        {
+            $group: {
+                _id: "$department", // Replace fieldName with the actual field name
+                count: { $sum: 1 }
+            }
+        }
+        ])
+        let reviewed = await DocumentSchema.aggregate([{ $match: { status: "Reviewed" } },
+        {
+            $group: {
+                _id: "$department", // Replace fieldName with the actual field name
+                count: { $sum: 1 }
+            }
+        }
+        ])
+        let wfa = await DocumentSchema.aggregate([{ $match: { status: "waiting_for_approval" } },
+        {
+            $group: {
+                _id: "$department", // Replace fieldName with the actual field name
+                count: { $sum: 1 }
+            }
+        }
+        ])
+        let approved = await DocumentSchema.aggregate([{ $match: { status: "approved" } },
+        {
+            $group: {
+                _id: "$department", // Replace fieldName with the actual field name
+                count: { $sum: 1 }
+            }
+        }
+        ])
+
+        resObject.push({ status: "Created", count: created })
+        resObject.push({ status: "Waiting for review", count: wfr })
+        resObject.push({ status: "Reviewed", count: reviewed })
+        resObject.push({ status: "Waiting for approval", count: wfa })
+        resObject.push({ status: "Approved", count: approved })
+        resObject.push({ status: "Published", count: published })
+
+        res.status(200).json(resObject)
+
+    } catch (error) {
+        res.status(404).json(error)
+    }
+})
 app.patch("/doc-update/:id", authenticateToken, async (req, res, next) => {
     try {
 
@@ -182,7 +248,7 @@ app.patch("/doc-update/:id", authenticateToken, async (req, res, next) => {
         //     console.log("result", result)
         //     url = result.secure_url
         // })
-
+        console.log(req.body.data)
         const { file, title } = req.body.data;
         let DOC = await DocumentSchema.findOne({ _id: req.params.id });
         console.log(DOC.file)
@@ -221,7 +287,7 @@ app.patch("/doc-update/:id", authenticateToken, async (req, res, next) => {
         if (!docCreated) {
             return res.sendStatus(204)
         } else {
-            await sendEmail(req.user.email, `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            await sendEmail(req.user.email, `${docCreated.name} has been Edited by ${docCreated.modified_by}`, "Document Edited");
             const new_log = new NewLogSchema({
                 version: 1,
                 doc_name: docCreated.name,

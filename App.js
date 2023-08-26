@@ -53,6 +53,7 @@ const login = require("./routes/Login");
 const logout = require("./routes/logout");
 const user = require("./routes/Register");
 const cloudinary = require("./cloudnary/cloudnary");
+const { authenticateToken } = require("./controllers/authenticateToken");
 
 /* importing local Routes base URL points */
 app.use("/register", user);
@@ -107,7 +108,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-app.post("/document-update", async (req, res, next) => {
+app.post("/document-update", authenticateToken, async (req, res, next) => {
     try {
 
         // await cloudinary.uploader.upload(req.file.path, { resource_type: "auto" }, function (err, result) {
@@ -116,7 +117,7 @@ app.post("/document-update", async (req, res, next) => {
         // })
 
         const { html, title } = req.body;
-
+        console.log(req.user.email)
         fs.writeFileSync(`./Data/${title}.html`, html);
         const filename = `./Data/${title}.html`
         // const fileContent = fs.readFileSync(filename)
@@ -149,7 +150,7 @@ app.post("/document-update", async (req, res, next) => {
         if (!docCreated) {
             return res.sendStatus(204)
         } else {
-            await sendEmail('leslie.lawrence@zongovita.com', `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            await sendEmail(req.user?.email, `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
             const new_log = new NewLogSchema({
                 version: 1,
                 doc_name: docCreated.name,
@@ -174,7 +175,7 @@ app.post("/document-update", async (req, res, next) => {
 
 });
 
-app.patch("/doc-update/:id", async (req, res, next) => {
+app.patch("/doc-update/:id", authenticateToken, async (req, res, next) => {
     try {
 
         // await cloudinary.uploader.upload(req.file.path, { resource_type: "auto" }, function (err, result) {
@@ -220,7 +221,7 @@ app.patch("/doc-update/:id", async (req, res, next) => {
         if (!docCreated) {
             return res.sendStatus(204)
         } else {
-            await sendEmail('leslie.lawrence@zongovita.com', `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            await sendEmail(req.user.email, `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
             const new_log = new NewLogSchema({
                 version: 1,
                 doc_name: docCreated.name,
@@ -298,11 +299,12 @@ app.get("/published-doc", async (req, res) => {
 
 
 
-app.post("/read-doc", upload.single('file'), async (req, res) => {
+app.post("/read-doc", authenticateToken, upload.single('file'), async (req, res) => {
     try {
         var html;
         var filename;
         console.log('File uploaded:', req.file);
+        console.log(req.user)
         // res.json({ message: 'File uploaded successfully' });
         let path = req.file.filename
         await mammoth.convertToHtml({ path: `./uploadedFiles/${path}` })
@@ -345,7 +347,7 @@ app.post("/read-doc", upload.single('file'), async (req, res) => {
         if (!docCreated) {
             return res.sendStatus(204)
         } else {
-            await sendEmail('leslie.lawrence@zongovita.com', `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            await sendEmail(req.user.email, `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
             const new_log = new NewLogSchema({
                 version: 1,
                 doc_name: docCreated.name,
@@ -690,7 +692,7 @@ app.get("/prev", async (req, res, next) => {
 //************************************************************//
 ////////////////////////////////////////////////////////////////
 //DOCS
-app.post("/document", async (req, res, next) => {
+app.post("/document", authenticateToken, async (req, res, next) => {
     try {
         const { file, name } = req.body.data;
         let newVersion = {
@@ -728,7 +730,7 @@ app.post("/document", async (req, res, next) => {
         if (!docCreated) {
             return res.sendStatus(204)
         } else {
-            await sendEmail('mona.raychura@zongovita.com', `A new document named ${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            await sendEmail(req.user.email, `A new document named ${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
             const new_log = new NewLogSchema({
                 version: 1,
                 doc_name: docCreated.name,
@@ -798,7 +800,7 @@ app.get("/document-all", async (req, res, next) => {
     }
 
 });
-app.patch("/document/:id", async (req, res, next) => {
+app.patch("/document/:id", authenticateToken, async (req, res, next) => {
     try {
         ///////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////
@@ -849,7 +851,7 @@ app.patch("/document/:id", async (req, res, next) => {
         } else {
             let message = returnMessage(reqStatus);
 
-            await sendEmail('mona.raychura@zongovita.com', `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
+            await sendEmail(req.user.email, `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
             const new_log = new NewLogSchema({
                 version: reqStatus === 'approved' ? updatedDoc.version.final : updatedDoc.version.draft,
                 doc_name: updatedDoc.name,

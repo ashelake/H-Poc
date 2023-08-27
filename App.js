@@ -854,14 +854,32 @@ app.get("/document-all", async (req, res, next) => {
     try {
 
         let role = req.query.role;
+        let status = req.query.status
+
         if (role == "1000") {
-            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "Waiting for Approval"] } }] }).sort({ created_date: -1 })
+            if (status == "all") {
+                var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "Waiting for Approval"] } }] }).sort({ created_date: -1 })
+            } else {
+                var allDocs = await DocumentSchema.find({ status: status }).sort({ created_date: -1 })
+
+            }
         }
         if (role == "1001") {
-            var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "Waiting for Review"] } }] }).sort({ created_date: -1 })
+            if (status == "all") {
+                var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "Waiting for Review"] } }] }).sort({ created_date: -1 })
+            } else {
+                var allDocs = await DocumentSchema.find({ status: status }).sort({ created_date: -1 })
+            }
+
         }
         if (role == "1003") {
-            var allDocs = await DocumentSchema.find({ status: { $nin: ["Published",] } }).sort({ created_date: -1 })
+            if (status == "all") {
+                var allDocs = await DocumentSchema.find({ status: { $nin: ["Published",] } }).sort({ created_date: -1 })
+
+            } else {
+
+                var allDocs = await DocumentSchema.find({ status: "Published" }).sort({ created_date: -1 })
+            }
         }
         if (allDocs.length === 0) {
             return res.sendStatus(204)

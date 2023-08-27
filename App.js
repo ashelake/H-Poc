@@ -178,7 +178,12 @@ app.post("/document-update", authenticateToken, async (req, res, next) => {
 
 app.get("/bar-grph", async (req, res) => {
     try {
-        let resObject = []
+        let resObject = {
+            result: []
+        }
+
+        let department = await DocumentSchema.distinct("department")
+        resObject.department = department
         let created = await DocumentSchema.aggregate([{ $match: { status: { $in: ["created", "edited",] } } },
         {
             $group: {
@@ -228,12 +233,12 @@ app.get("/bar-grph", async (req, res) => {
         }
         ])
 
-        resObject.push({ status: "Created", count: created })
-        resObject.push({ status: "Waiting for review", count: wfr })
-        resObject.push({ status: "Reviewed", count: reviewed })
-        resObject.push({ status: "Waiting for approval", count: wfa })
-        resObject.push({ status: "Approved", count: approved })
-        resObject.push({ status: "Published", count: published })
+        resObject.result.push({ status: "Created", count: created })
+        resObject.result.push({ status: "Waiting for review", count: wfr })
+        resObject.result.push({ status: "Reviewed", count: reviewed })
+        resObject.result.push({ status: "Waiting for approval", count: wfa })
+        resObject.result.push({ status: "Approved", count: approved })
+        resObject.result.push({ status: "Published", count: published })
 
         res.status(200).json(resObject)
 
@@ -269,7 +274,7 @@ app.patch("/doc-update/:id", authenticateToken, async (req, res, next) => {
             // name: req.body.name, //req.file.originalname,
             file: filename,
             status: 'edited',//req.body.status,
-            // comments: req.body.comments,
+            comments: req.body.data.comments,
             // category: req.body.category,
             // created_by: req.body.id,
             // modified_by: req.body.id,
@@ -760,6 +765,8 @@ app.get("/prev", async (req, res, next) => {
 //DOCS
 app.post("/document", authenticateToken, async (req, res, next) => {
     try {
+
+        console.log(req)
         const { file, name } = req.body.data;
         let newVersion = {
             draft: 1,

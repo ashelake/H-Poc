@@ -34,7 +34,7 @@ const DocumentSchema = new mongoose.Schema(
     version: { type: String },
     status: { type: String },
     department: { type: String },
-    comments: [CommentSchema],
+    comments: [],
     category: { type: String },
     created_by: { type: String },
     modified_by: { type: String },

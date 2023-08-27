@@ -179,66 +179,97 @@ app.post("/document-update", authenticateToken, async (req, res, next) => {
 app.get("/bar-grph", async (req, res) => {
     try {
         let resObject = {
-            result: []
+
         }
 
         let department = await DocumentSchema.distinct("department")
         resObject.department = department
-        let created = await DocumentSchema.aggregate([{ $match: { status: { $in: ["created", "edited",] } } },
-        {
-            $group: {
-                _id: "$department", // Replace fieldName with the actual field name
-                count: { $sum: 1 }
-            }
+        let createdArray = []
+        let publishedArray = []
+        let wfrArray = []
+        let reviewedArray = []
+        let wfaArray = []
+        let approvedArray = []
+        for (let i = 0; i < department.length; i++) {
+            let created = await DocumentSchema.find({ status: { $in: ["created", "edited",] }, department: department[i] }).count()
+            createdArray.push(created)
+            let published = await DocumentSchema.find({ status: "Published", department: department[i] }).count()
+            publishedArray.push(published)
+            let wfr = await DocumentSchema.find({ status: "waiting_for_review", department: department[i] }).count()
+            wfrArray.push(wfr)
+            let reviewed = await DocumentSchema.find({ status: "Reviewed", department: department[i] }).count()
+            reviewedArray.push(reviewed)
+            let wfa = await DocumentSchema.find({ status: "waiting_for_approval", department: department[i] }).count()
+            wfaArray.push(wfa)
+            let approved = await DocumentSchema.find({ status: "approved", department: department[i] }).count()
+            approvedArray.push(approved)
         }
-        ])
-        let published = await DocumentSchema.aggregate([{ $match: { status: "Published" } },
-        {
-            $group: {
-                _id: "$department", // Replace fieldName with the actual field name
-                count: { $sum: 1 }
-            }
-        }
-        ])
-        let wfr = await DocumentSchema.aggregate([{ $match: { status: "waiting_for_review" } },
-        {
-            $group: {
-                _id: "$department", // Replace fieldName with the actual field name
-                count: { $sum: 1 }
-            }
-        }
-        ])
-        let reviewed = await DocumentSchema.aggregate([{ $match: { status: "Reviewed" } },
-        {
-            $group: {
-                _id: "$department", // Replace fieldName with the actual field name
-                count: { $sum: 1 }
-            }
-        }
-        ])
-        let wfa = await DocumentSchema.aggregate([{ $match: { status: "waiting_for_approval" } },
-        {
-            $group: {
-                _id: "$department", // Replace fieldName with the actual field name
-                count: { $sum: 1 }
-            }
-        }
-        ])
-        let approved = await DocumentSchema.aggregate([{ $match: { status: "approved" } },
-        {
-            $group: {
-                _id: "$department", // Replace fieldName with the actual field name
-                count: { $sum: 1 }
-            }
-        }
-        ])
 
-        resObject.result.push({ status: "Created", count: created })
-        resObject.result.push({ status: "Waiting for review", count: wfr })
-        resObject.result.push({ status: "Reviewed", count: reviewed })
-        resObject.result.push({ status: "Waiting for approval", count: wfa })
-        resObject.result.push({ status: "Approved", count: approved })
-        resObject.result.push({ status: "Published", count: published })
+
+
+        // let created = await DocumentSchema.aggregate([{ $match: { status: { $in: ["created", "edited",] } } },
+        // {
+        //     $group: {
+        //         _id: "$department", // Replace fieldName with the actual field name
+        //         count: { $sum: 1 }
+        //     }
+        // }
+        // ])
+        // let published = await DocumentSchema.aggregate([{ $match: { status: "Published" } },
+        // {
+        //     $group: {
+        //         _id: "$department", // Replace fieldName with the actual field name
+        //         count: { $sum: 1 }
+        //     }
+        // }
+        // ])
+        // let wfr = await DocumentSchema.aggregate([{ $match: { status: "waiting_for_review" } },
+        // {
+        //     $group: {
+        //         _id: "$department", // Replace fieldName with the actual field name
+        //         count: { $sum: 1 }
+        //     }
+        // }
+        // ])
+        // let reviewed = await DocumentSchema.aggregate([{ $match: { status: "Reviewed" } },
+        // {
+        //     $group: {
+        //         _id: "$department", // Replace fieldName with the actual field name
+        //         count: { $sum: 1 }
+        //     }
+        // }
+        // ])
+        // let wfa = await DocumentSchema.aggregate([{ $match: { status: "waiting_for_approval" } },
+        // {
+        //     $group: {
+        //         _id: "$department", // Replace fieldName with the actual field name
+        //         count: { $sum: 1 }
+        //     }
+        // }
+        // ])
+        // let approved = await DocumentSchema.aggregate([{ $match: { status: "approved" } },
+        // {
+        //     $group: {
+        //         _id: "$department", // Replace fieldName with the actual field name
+        //         count: { $sum: 1 }
+        //     }
+        // }
+        // ])
+
+        // resObject.result.push({ status: "Created", count: created })
+        // resObject.result.push({ status: "Waiting for review", count: wfr })
+        // resObject.result.push({ status: "Reviewed", count: reviewed })
+        // resObject.result.push({ status: "Waiting for approval", count: wfa })
+        // resObject.result.push({ status: "Approved", count: approved })
+        // resObject.result.push({ status: "Published", count: published })
+
+        resObject.createdArray = createdArray
+        resObject.publishedArray = publishedArray
+        resObject.wfrArray = wfrArray
+        resObject.reviewedArray = reviewedArray
+        resObject.wfaArray = wfaArray
+        resObject.approvedArray = approvedArray
+
 
         res.status(200).json(resObject)
 

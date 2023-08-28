@@ -889,7 +889,7 @@ app.get("/document-all", async (req, res, next) => {
 
         if (role == "1000") {
             if (status == "all") {
-                var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "Waiting for Approval"] } }] }).sort({ created_date: -1 })
+                var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "waiting_for_approval"] } }] }).sort({ created_date: -1 })
             } else {
                 var allDocs = await DocumentSchema.find({ status: status }).sort({ created_date: -1 })
 
@@ -897,7 +897,7 @@ app.get("/document-all", async (req, res, next) => {
         }
         if (role == "1001") {
             if (status == "all") {
-                var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "Waiting for Review"] } }] }).sort({ created_date: -1 })
+                var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "waiting_for_review"] } }] }).sort({ created_date: -1 })
             } else {
                 var allDocs = await DocumentSchema.find({ status: status }).sort({ created_date: -1 })
             }
@@ -909,7 +909,7 @@ app.get("/document-all", async (req, res, next) => {
 
             } else {
 
-                var allDocs = await DocumentSchema.find({ status: "Published" }).sort({ created_date: -1 })
+                var allDocs = await DocumentSchema.find({ status: status }).sort({ created_date: -1 })
             }
         }
         if (allDocs.length === 0) {
@@ -959,7 +959,7 @@ app.patch("/document/:id", authenticateToken, async (req, res, next) => {
             modified_by: req.body.user.id,
             ...(reqStatus === 'created') && { created_date: new Date() },
             modified_date: new Date(),
-            version: newVersion,
+            // version: newVersion,
             // comments: req.body.data.comments,
             ...(req.body.data.reviewer) && { reviewer: req.body.data.reviewer },
             ...(req.body.data.approver) && { approver: req.body.data.approver },

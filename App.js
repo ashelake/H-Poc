@@ -26,6 +26,7 @@ const { emailTemplate } = require("./utils/emailTemplate")
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
 const DocumentSchema = require("./models/Document")
+const UserSchema = require("./models/Register_Schema")
 const NewLogSchema = require("./models/log")
 // import { createTransport } from "nodemailer"
 const nodemailer = require("nodemailer");
@@ -174,6 +175,26 @@ app.post("/document-update", authenticateToken, async (req, res, next) => {
     }
 
 });
+app.get("/get-reviewer", async (req, res) => {
+    try {
+        let User = await UserSchema.find({ role: 1001 }, { email: 1 })
+        res.status(200).json(User)
+
+    } catch (error) {
+        res.status(404).json(error)
+    }
+})
+app.get("/get-approver", async (req, res) => {
+    try {
+        let User = await UserSchema.find({ role: 1000 }, { email: 1 })
+        res.status(200).json(User)
+
+    } catch (error) {
+        res.status(404).json(error)
+    }
+})
+
+
 
 
 app.get("/bar-grph", async (req, res) => {
@@ -881,7 +902,7 @@ app.get("/document/:id", async (req, res, next) => {
     }
 
 });
-app.get("/document-all", async (req, res, next) => {
+app.get("/document-all", authenticateToken, async (req, res, next) => {
     try {
 
         let role = req.query.role;
@@ -889,17 +910,17 @@ app.get("/document-all", async (req, res, next) => {
 
         if (role == "1000") {
             if (status == "all") {
-                var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["approved", "waiting_for_approval"] } }] }).sort({ created_date: -1 })
+                var allDocs = await DocumentSchema.find({ approver: req.user.email, $or: [{ status: { $in: ["approved", "waiting_for_approval"] } }] }).sort({ created_date: -1 })
             } else {
-                var allDocs = await DocumentSchema.find({ status: status }).sort({ created_date: -1 })
+                var allDocs = await DocumentSchema.find({ approver: req.user.email, status: status }).sort({ created_date: -1 })
 
             }
         }
         if (role == "1001") {
             if (status == "all") {
-                var allDocs = await DocumentSchema.find({ $or: [{ status: { $in: ["Reviewed", "waiting_for_review"] } }] }).sort({ created_date: -1 })
+                var allDocs = await DocumentSchema.find({ reviewer: req.user.email, $or: [{ status: { $in: ["Reviewed", "waiting_for_review", "reviewed_with_comment"] } }] }).sort({ created_date: -1 })
             } else {
-                var allDocs = await DocumentSchema.find({ status: status }).sort({ created_date: -1 })
+                var allDocs = await DocumentSchema.find({ reviewer: req.user.email, status: status }).sort({ created_date: -1 })
             }
 
         }
@@ -974,6 +995,7 @@ app.patch("/document/:id", authenticateToken, async (req, res, next) => {
             let message = returnMessage(reqStatus);
 
             await sendEmail(req.user.email, `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
+            // await sendEmail(req.body.data.reviewer, `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
             const new_log = new NewLogSchema({
                 version: reqStatus === 'approved' ? updatedDoc.version.final : updatedDoc.version.draft,
                 doc_name: updatedDoc.name,

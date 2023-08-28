@@ -37,7 +37,7 @@ const DocumentSchema = new mongoose.Schema(
     comments: [],
     category: { type: String },
     created_by: { type: String },
-    modified_by: { type: String },
+    modified_by: [],
     created_date: { type: Date },
     modified_date: { type: Date },
     reviewer: { type: String },

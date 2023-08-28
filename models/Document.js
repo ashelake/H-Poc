@@ -44,6 +44,10 @@ const DocumentSchema = new mongoose.Schema(
     approver: { type: String },
     reviewer_date: { type: Date },
     approver_date: { type: Date },
+    sent_reviewer_date: [],
+    sent_approver_date: [],
+    approved_with_comments_date: [],
+    reviewed_with_comments_date: []
   },
   {
     collection: "document",

@@ -212,7 +212,7 @@ app.get("/bar-grph", async (req, res) => {
         let wfaArray = []
         let approvedArray = []
         for (let i = 0; i < department.length; i++) {
-            let created = await DocumentSchema.find({ status: { $in: ["created", "edited",] }, department: department[i] }).count()
+            let created = await DocumentSchema.find({ status: { $in: ["created", "modified",] }, department: department[i] }).count()
             createdArray.push(created)
             let published = await DocumentSchema.find({ status: "Published", department: department[i] }).count()
             publishedArray.push(published)
@@ -325,7 +325,7 @@ app.patch("/doc-update/:id", authenticateToken, async (req, res, next) => {
             // id: req.body.data.id,
             // name: req.body.name, //req.file.originalname,
             file: filename,
-            status: 'edited',//req.body.status,
+            // status: 'created',//req.body.status,
             comments: req.body.data.comments,
             // category: req.body.category,
             // created_by: req.body.id,
@@ -373,7 +373,7 @@ app.patch("/doc-update/:id", authenticateToken, async (req, res, next) => {
 app.get("/dashboard", async (req, res) => {
     try {
         let resObject = []
-        let created = await DocumentSchema.find({ $in: { status: ["created", "edited",] } }).count()
+        let created = await DocumentSchema.find({ $in: { status: ["created", "modified",] } }).count()
         let published = await DocumentSchema.find({ status: "Published" }).count()
         let wfr = await DocumentSchema.find({ status: "waiting_for_review" }).count()
         let reviewed = await DocumentSchema.find({ status: "Reviewed" }).count()
@@ -995,7 +995,11 @@ app.patch("/document/:id", authenticateToken, async (req, res, next) => {
             let message = returnMessage(reqStatus);
 
             await sendEmail(req.user.email, `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
-            // await sendEmail(req.body.data.reviewer, `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
+
+            // if (req.body.data.status == "waiting_for_review") {
+
+            //     await sendEmail(req.body.data.reviewer, `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
+            // }
             const new_log = new NewLogSchema({
                 version: reqStatus === 'approved' ? updatedDoc.version.final : updatedDoc.version.draft,
                 doc_name: updatedDoc.name,
@@ -1020,14 +1024,14 @@ app.patch("/document/:id", authenticateToken, async (req, res, next) => {
 });
 
 const returnMessage = (status) => {
-    if (status === 'Waiting for Review')
+    if (status === 'waiting_for_review')
         return 'and is ready for Review.';
-    else if (status === 'Waiting for Approval')
+    else if (status === 'waiting_for_approval')
         return 'and is ready for Approval.';
     else return '';
 }
 const returnEvent = (status) => {
-    if (status === 'Waiting for Review')
+    if (status === 'waiting_for_review')
         return 'Waiting for Review';
     else if (status === 'Reviewed')
         return 'Document Reviewed';

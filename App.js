@@ -987,7 +987,7 @@ app.patch("/document/:id", authenticateToken, async (req, res, next) => {
             // comments: req.body.data.comments,
             ...(req.body.data.reviewer) && { reviewer: req.body.data.reviewer },
             ...(req.body.data.approver) && { approver: req.body.data.approver },
-            ...(req.body.data.reviewer) && { reviewer_date: new Date() },
+            ...(reqStatus === 'Reviewed') && { reviewer_date: new Date() },
             ...(reqStatus === 'approved') && { approver_date: new Date() },
         };
         const updatedDoc = await DocumentSchema.findByIdAndUpdate({ _id: req.params.id }, doc);

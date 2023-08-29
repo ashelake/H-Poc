@@ -193,7 +193,15 @@ app.get("/get-approver", async (req, res) => {
         res.status(404).json(error)
     }
 })
+app.get("/get-users", async (req, res) => {
+    try {
+        let User = await UserSchema.find({})
+        res.status(200).json(User)
 
+    } catch (error) {
+        res.status(404).json(error)
+    }
+})
 
 
 

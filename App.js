@@ -331,7 +331,7 @@ app.patch("/doc-update/:id", authenticateToken, async (req, res, next) => {
         }
         const docCreated = await DocumentSchema.findByIdAndUpdate({ _id: req.params.id }, {
             // id: req.body.data.id,
-            // name: req.body.name, //req.file.originalname,
+            name: req.body.data.name, //req.file.originalname,
             file: filename,
             // status: 'created',//req.body.status,
             comments: req.body.data.comments,
@@ -434,14 +434,14 @@ app.post("/read-doc", authenticateToken, upload.single('file'), async (req, res)
     try {
         var html;
         var filename;
-        console.log('File uploaded:', req.file);
-        console.log(req.user)
+        // console.log('File uploaded:', req.file);
+        // console.log(req.user)
         // res.json({ message: 'File uploaded successfully' });
         let path = req.file.filename
         await mammoth.convertToHtml({ path: `./uploadedFiles/${path}` })
             .then(function (result) {
                 html = result.value; // The generated HTML
-                console.log(html)
+                // console.log(html)
                 fs.writeFileSync(`./Data/${req.body.name}.html`, html);
                 filename = `./Data/${req.body.name}.html`
                 var messages = result.messages; // Any messages, such as warnings during conversion
@@ -998,6 +998,8 @@ app.patch("/document/:id", authenticateToken, async (req, res, next) => {
             ...(reqStatus === 'Reviewed') && { reviewer_date: new Date() },
             ...(reqStatus === 'approved') && { approver_date: new Date() },
         };
+
+        console.log(doc)
         const updatedDoc = await DocumentSchema.findByIdAndUpdate({ _id: req.params.id }, doc);
         // console.log("updatedDoc", updatedDoc)
         if (!updatedDoc) {

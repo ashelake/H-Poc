@@ -478,7 +478,8 @@ app.post("/read-doc", authenticateToken, upload.single('file'), async (req, res)
         if (!docCreated) {
             return res.sendStatus(204)
         } else {
-            await sendEmail(req.user.email, `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            // await sendEmail(req.user.email, `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            await sendEmail("mona.raychura@zongovita.com", `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
             const new_log = new NewLogSchema({
                 version: 1,
                 doc_name: docCreated.name,

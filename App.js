@@ -1046,6 +1046,8 @@ const returnEvent = (status) => {
         return 'Waiting for Review';
     else if (status === 'Reviewed')
         return 'Document Reviewed';
+    else if (status === 'reviewed_with_comment')
+        return 'Document Reviewed With Comment';
     else if (status === 'waiting_for_approval')
         return 'Waiting for Approval';
     else if (status === 'approved')

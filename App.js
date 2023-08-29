@@ -934,7 +934,7 @@ app.get("/document-all", authenticateToken, async (req, res, next) => {
         }
         if (role == "1003") {
             if (status == "all") {
-                var allDocs = await DocumentSchema.find({ status: { $nin: ["Published",] } }).sort({ created_date: -1 })
+                var allDocs = await DocumentSchema.find({}).sort({ created_date: -1 })
 
             } else {
 

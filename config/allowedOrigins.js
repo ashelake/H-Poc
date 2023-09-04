@@ -6,8 +6,10 @@ const allowedOrigins = [
   "http://13.233.102.135:8010",
   "https://d1zcs2a52o3nke.cloudfront.net",
   "http://zongotestweb.s3-website.ap-south-1.amazonaws.com",
+  "http://zongodms.s3-website.ap-south-2.amazonaws.com",
   "https://zvrepo.s3.ap-south-1.amazonaws.com",
   "http://18.60.249.165:4000",
+  "http://18.60.249.165:4002",
   //local development URL's
   "http://localhost:3500",
   "http://localhost:3000",

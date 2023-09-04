@@ -202,9 +202,6 @@ app.get("/get-users", async (req, res) => {
         res.status(404).json(error)
     }
 })
-
-
-
 app.get("/bar-grph", async (req, res) => {
     try {
         let resObject = {
@@ -376,8 +373,6 @@ app.patch("/doc-update/:id", authenticateToken, async (req, res, next) => {
     }
 
 });
-
-
 app.get("/dashboard", async (req, res) => {
     try {
         let resObject = []
@@ -402,7 +397,6 @@ app.get("/dashboard", async (req, res) => {
         res.status(404).json(error)
     }
 })
-
 app.get("/published-doc", async (req, res) => {
     try {
         let pageNumber = Math.abs(parseInt(req.query.page)) || 1; //initially on first page
@@ -427,9 +421,6 @@ app.get("/published-doc", async (req, res) => {
         res.status(404).json(error.message)
     }
 })
-
-
-
 app.post("/read-doc", authenticateToken, upload.single('file'), async (req, res) => {
     try {
         var html;
@@ -478,8 +469,8 @@ app.post("/read-doc", authenticateToken, upload.single('file'), async (req, res)
         if (!docCreated) {
             return res.sendStatus(204)
         } else {
-            // await sendEmail(req.user.email, `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
-            await sendEmail("mona.raychura@zongovita.com", `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            await sendEmail(req.user.email, `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
+            // await sendEmail("mona.raychura@zongovita.com", `${docCreated.name} has been Created by ${docCreated.modified_by}`, "Document Created");
             const new_log = new NewLogSchema({
                 version: 1,
                 doc_name: docCreated.name,
@@ -505,9 +496,6 @@ app.post("/read-doc", authenticateToken, upload.single('file'), async (req, res)
         console.log(error)
     }
 })
-
-
-
 //---------------------------------------------Module & Log----------------//
 //Get all Module
 app.get("/allmodule", async (req, res, next) => {
@@ -524,7 +512,6 @@ app.get("/allmodule", async (req, res, next) => {
 
 })
 //---------------------------------------------Equipment----------------//
-
 //Get all Equipment
 app.get("/equipment", async (req, res, next) => {
     try {
@@ -1009,6 +996,14 @@ app.patch("/document/:id", authenticateToken, async (req, res, next) => {
             let message = returnMessage(reqStatus);
 
             await sendEmail(req.user.email, `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
+            if (reqStatus == "Reviewed") {
+
+                await sendEmail(req.body?.data?.reviewer, `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
+            }
+            if (reqStatus == "approved") {
+
+                await sendEmail(req.body?.data?.approver, `${updatedDoc.name} has been Updated by ${updatedDoc.modified_by} ${message}`, reqStatus === 'approved' ? "Master Copy Created" : "Document Updated");
+            }
 
             // if (req.body.data.status == "waiting_for_review") {
 
